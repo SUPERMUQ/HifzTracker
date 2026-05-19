@@ -1,234 +1,184 @@
-// src/components/LogForm.jsx
-import { useState } from "react";
-import {
-  BookOpen,
-  Hash,
-  AlignLeft,
-  ChevronDown,
-  CheckCircle2,
-  Loader2,
-} from "lucide-react";
+import React, { useState } from 'react';
+import { BookOpen, CheckCircle } from 'lucide-react';
+// Import your database helper service
+import { addReadingLog } from '../firebase/logService';
 
-const READING_TYPES = [
-  { value: "hifz",      label: "Hifz",       subtext: "Memorization"   },
-  { value: "murajaah",  label: "Muraja'ah",  subtext: "Revision"       },
-  { value: "tilawah",   label: "Tilawah",    subtext: "Recitation"     },
-];
-
-const INITIAL_STATE = {
-  type:      "tilawah",
-  quranPage: "",
-  surahName: "",
-  startAyat: "",
-  endAyat:   "",
-  notes:     "",
-};
-
-// ─── Reusable field wrapper ───────────────────────────────────────────────────
-const Field = ({ label, icon: Icon, hint, children }) => (
-  <div className="flex flex-col gap-1.5">
-    <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emerald-800/70 select-none">
-      {Icon && <Icon size={12} strokeWidth={2} className="text-emerald-600" />}
-      {label}
-      {hint && <span className="ml-auto normal-case tracking-normal font-normal text-stone-400">{hint}</span>}
-    </label>
-    {children}
-  </div>
-);
-
-// ─── Shared input className ───────────────────────────────────────────────────
-const inputCls = `
-  w-full rounded-xl border border-stone-200 bg-white/80
-  px-4 py-3 text-sm text-stone-800 placeholder-stone-300
-  outline-none ring-0
-  transition-all duration-200
-  focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/15
-  hover:border-stone-300
-`.trim();
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-export default function LogForm() {
-  const [form,       setForm]       = useState(INITIAL_STATE);
-  const [submitting, setSubmitting] = useState(false);
-  const [success,    setSuccess]    = useState(false);
+// Update the function parameter line to accept userId
+export default function LogForm({ userId })  {
+  const [formData, setFormData] = useState({
+    type: 'Hifz',
+    quranPage: '',
+    surahName: '',
+    startAyat: '',
+    endAyat: '',
+    notes: ''
+  });
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    setIsSubmitting(true);
+    
+    // Format today's date cleanly as YYYY-MM-DD for storage
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Map your UI dropdown types to match the exact string keywords backend expects
+    let dbType = "reading";
+    if (formData.type === "Hifz") {
+      dbType = "memorization";
+    } else if (formData.type === "Muraja'ah") {
+      dbType = "revision";
+    } else if (formData.type === "Tilawah") {
+      dbType = "reading";
+    }
+    
+    // Prepare data structure perfectly matching database schema
+    const logPayload = {
+      date: todayStr,
+      quranPage: Number(formData.quranPage),
+      surahName: formData.surahName,
+      startAyat: Number(formData.startAyat),
+      endAyat: Number(formData.endAyat),
+      type: dbType, // Passes the correctly mapped backend string validation filter
+      notes: formData.notes
+    };
 
-    // Simulate async save (replace with addReadingLog call)
-    await new Promise((r) => setTimeout(r, 900));
-
-    console.log("📖 Session logged:", {
-      ...form,
-      date: new Date().toISOString().slice(0, 10),
-    });
-
-    setSubmitting(false);
-    setSuccess(true);
-    setForm(INITIAL_STATE);
-
-    // Auto-dismiss success banner
-    setTimeout(() => setSuccess(false), 3500);
+    try {
+  // Pass the real authenticated user UID straight to your logService handler!
+  await addReadingLog(userId, logPayload);
+      
+      setShowSuccess(true);
+      setFormData({
+        type: 'Hifz',
+        quranPage: '',
+        surahName: '',
+        startAyat: '',
+        endAyat: '',
+        notes: ''
+      });
+      setTimeout(() => setShowSuccess(false), 4000);
+    } catch (error) {
+      console.error("Error writing log entry to Firebase:", error);
+      alert("Failed to save progress. Please double check that your Firestore security rules are set to test mode.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="relative">
-
-      {/* ── Success banner ────────────────────────────────────────────────── */}
-      <div
-        className={`
-          overflow-hidden transition-all duration-500 ease-in-out
-          ${success ? "max-h-20 mb-5 opacity-100" : "max-h-0 mb-0 opacity-0"}
-        `}
-      >
-        <div className="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-          <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
-          <div>
-            <span className="font-semibold">Session saved!</span>
-            <span className="text-emerald-700/70 ml-1.5">May Allah bless your efforts. 🌿</span>
-          </div>
-        </div>
+    <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 mx-auto">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-gray-800">Log Your Session</h2>
+        <p className="text-sm text-gray-500 mt-1">Record your daily progress to maintain your streak.</p>
       </div>
 
-      {/* ── Form card ─────────────────────────────────────────────────────── */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-5"
-        noValidate
-      >
+      {showSuccess && (
+        <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3 animate-fade-in">
+          <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <span className="text-sm font-medium">Progress successfully logged to Firestore! Keep up the amazing work.</span>
+        </div>
+      )}
 
-        {/* Reading Type — pill selector */}
-        <Field label="Session Type" icon={BookOpen}>
-          <div className="grid grid-cols-3 gap-2">
-            {READING_TYPES.map(({ value, label, subtext }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setForm((p) => ({ ...p, type: value }))}
-                className={`
-                  relative flex flex-col items-center justify-center gap-0.5
-                  rounded-xl border py-3 px-2 text-center
-                  transition-all duration-200 select-none cursor-pointer
-                  ${form.type === value
-                    ? "border-emerald-600 bg-emerald-800 text-white shadow-md shadow-emerald-900/20"
-                    : "border-stone-200 bg-white/80 text-stone-500 hover:border-emerald-300 hover:text-emerald-700"
-                  }
-                `}
-              >
-                <span className="text-sm font-semibold leading-tight">{label}</span>
-                <span className={`text-[10px] leading-tight ${form.type === value ? "text-emerald-200" : "text-stone-400"}`}>
-                  {subtext}
-                </span>
-              </button>
-            ))}
-          </div>
-        </Field>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-stone-100" />
-          <span className="text-[10px] uppercase tracking-widest text-stone-300 select-none">
-            Session Details
-          </span>
-          <div className="flex-1 h-px bg-stone-100" />
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Reading Type */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Reading Type</label>
+          <select
+            name="type"
+            value={formData.type}
+            onChange={handleChange}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800 font-medium"
+          >
+            <option value="Hifz">Hifz (New Memorization)</option>
+            <option value="Muraja'ah">Muraja'ah (Revision)</option>
+            <option value="Tilawah">Tilawah (Normal Reading)</option>
+          </select>
         </div>
 
-        {/* Surah Name + Page — side by side on sm+ */}
+        {/* Page & Surah Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Surah Name" icon={BookOpen}>
-            <input
-              type="text"
-              name="surahName"
-              value={form.surahName}
-              onChange={handleChange}
-              placeholder="e.g. Al-Baqarah"
-              className={inputCls}
-              autoComplete="off"
-            />
-          </Field>
-
-          <Field label="Quran Page" icon={Hash} hint="1 – 604">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Quran Page</label>
             <input
               type="number"
               name="quranPage"
-              value={form.quranPage}
+              value={formData.quranPage}
               onChange={handleChange}
-              placeholder="e.g. 22"
-              min={1}
-              max={604}
-              className={inputCls}
+              placeholder="e.g. 45"
+              required
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800"
             />
-          </Field>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Surah Name</label>
+            <input
+              type="text"
+              name="surahName"
+              value={formData.surahName}
+              onChange={handleChange}
+              placeholder="e.g. Al-Baqarah"
+              required
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800"
+            />
+          </div>
         </div>
 
-        {/* Start Ayat + End Ayat — always side by side */}
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Start Ayat" icon={Hash}>
+        {/* Ayat Range Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Start Ayat</label>
             <input
               type="number"
               name="startAyat"
-              value={form.startAyat}
+              value={formData.startAyat}
               onChange={handleChange}
-              placeholder="1"
-              min={1}
-              className={inputCls}
+              placeholder="From"
+              required
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800"
             />
-          </Field>
-
-          <Field label="End Ayat" icon={Hash}>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">End Ayat</label>
             <input
               type="number"
               name="endAyat"
-              value={form.endAyat}
+              value={formData.endAyat}
               onChange={handleChange}
-              placeholder="5"
-              min={1}
-              className={inputCls}
+              placeholder="To"
+              required
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800"
             />
-          </Field>
+          </div>
         </div>
 
-        {/* Notes */}
-        <Field label="Personal Notes" icon={AlignLeft} hint="Optional">
+        {/* Personal Notes */}
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Personal Notes <span className="text-gray-400 font-normal">(Optional)</span></label>
           <textarea
             name="notes"
-            value={form.notes}
+            value={formData.notes}
             onChange={handleChange}
-            placeholder="Reflections, areas to review, du'a made…"
-            rows={3}
-            className={`${inputCls} resize-none leading-relaxed`}
-          />
-        </Field>
+            rows="3"
+            placeholder="Reflections on today's reading..."
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800 resize-none"
+          ></textarea>
+        </div>
 
-        {/* Submit */}
+        {/* Submit Button */}
         <button
           type="submit"
-          disabled={submitting}
-          className="
-            mt-1 flex items-center justify-center gap-2
-            rounded-xl bg-emerald-800 px-6 py-3.5
-            text-sm font-semibold tracking-wide text-white
-            shadow-md shadow-emerald-900/25
-            transition-all duration-200
-            hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-900/30 hover:-translate-y-px
-            active:translate-y-0 active:shadow-md
-            disabled:opacity-60 disabled:cursor-not-allowed disabled:translate-y-0
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
-          "
+          disabled={isSubmitting}
+          className="w-full bg-emerald-800 hover:bg-emerald-900 disabled:bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md transition-colors duration-200 flex items-center justify-center gap-2 mt-2"
         >
-          {submitting
-            ? <><Loader2 size={16} className="animate-spin" /> Saving…</>
-            : <>Save Session ✦</>
-          }
+          <BookOpen className="w-5 h-5" />
+          {isSubmitting ? "Logging progress..." : "Log Today's Progress"}
         </button>
-
       </form>
     </div>
   );
