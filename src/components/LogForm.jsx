@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { BookOpen, CheckCircle } from 'lucide-react';
-// Import your database helper service
 import { addReadingLog } from '../firebase/logService';
 
-// Update the function parameter line to accept userId
-export default function LogForm({ userId })  {
+export default function LogForm({ userId }) {
+  // 1. Get today's date formatted as YYYY-MM-DD for the default value
+  const today = new Date().toISOString().split('T')[0];
+
   const [formData, setFormData] = useState({
+    date: today, // Added date state
     type: 'Hifz',
     quranPage: '',
     surahName: '',
@@ -25,9 +27,6 @@ export default function LogForm({ userId })  {
     e.preventDefault();
     setIsSubmitting(true);
     
-    // Format today's date cleanly as YYYY-MM-DD for storage
-    const todayStr = new Date().toISOString().split('T')[0];
-    
     // Map your UI dropdown types to match the exact string keywords backend expects
     let dbType = "reading";
     if (formData.type === "Hifz") {
@@ -38,23 +37,24 @@ export default function LogForm({ userId })  {
       dbType = "reading";
     }
     
-    // Prepare data structure perfectly matching database schema
+    // Prepare data structure, now using formData.date instead of a forced today string
     const logPayload = {
-      date: todayStr,
+      date: formData.date, 
       quranPage: Number(formData.quranPage),
       surahName: formData.surahName,
       startAyat: Number(formData.startAyat),
       endAyat: Number(formData.endAyat),
-      type: dbType, // Passes the correctly mapped backend string validation filter
+      type: dbType,
       notes: formData.notes
     };
 
     try {
-  // Pass the real authenticated user UID straight to your logService handler!
-  await addReadingLog(userId, logPayload);
+      await addReadingLog(userId, logPayload);
       
       setShowSuccess(true);
+      // Reset form, including setting the date back to today
       setFormData({
+        date: today,
         type: 'Hifz',
         quranPage: '',
         surahName: '',
@@ -75,7 +75,7 @@ export default function LogForm({ userId })  {
     <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sm:p-8 mx-auto">
       <div className="text-center mb-6">
         <h2 className="text-2xl font-bold text-gray-800">Log Your Session</h2>
-        <p className="text-sm text-gray-500 mt-1">Record your daily progress to maintain your streak.</p>
+        <p className="text-sm text-gray-500 mt-1">Record your progress to maintain your streak.</p>
       </div>
 
       {showSuccess && (
@@ -86,19 +86,34 @@ export default function LogForm({ userId })  {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Reading Type */}
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Reading Type</label>
-          <select
-            name="type"
-            value={formData.type}
-            onChange={handleChange}
-            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800 font-medium"
-          >
-            <option value="Hifz">Hifz (New Memorization)</option>
-            <option value="Muraja'ah">Muraja'ah (Revision)</option>
-            <option value="Tilawah">Tilawah (Normal Reading)</option>
-          </select>
+        
+        {/* Date & Reading Type Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Date</label>
+            <input
+              type="date"
+              name="date"
+              value={formData.date}
+              onChange={handleChange}
+              max={today} // Prevents selecting future dates
+              required
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800 font-medium"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Reading Type</label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-700 focus:bg-white transition-all text-gray-800 font-medium"
+            >
+              <option value="Hifz">Hifz (New Memorization)</option>
+              <option value="Muraja'ah">Muraja'ah (Revision)</option>
+              <option value="Tilawah">Tilawah (Normal Reading)</option>
+            </select>
+          </div>
         </div>
 
         {/* Page & Surah Row */}
@@ -177,7 +192,7 @@ export default function LogForm({ userId })  {
           className="w-full bg-emerald-800 hover:bg-emerald-900 disabled:bg-emerald-600 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md transition-colors duration-200 flex items-center justify-center gap-2 mt-2"
         >
           <BookOpen className="w-5 h-5" />
-          {isSubmitting ? "Logging progress..." : "Log Today's Progress"}
+          {isSubmitting ? "Logging progress..." : "Log Progress"}
         </button>
       </form>
     </div>
