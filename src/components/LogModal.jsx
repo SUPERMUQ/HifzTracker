@@ -1,189 +1,207 @@
-// src/components/LogModal.jsx
-import { X, BookOpen, ListOrdered, StickyNote, Tag, Pencil } from "lucide-react";
-import { useEffect } from "react";
+import React, { useState } from 'react';
+import { X, Edit2, Save, Trash2, BookOpen } from 'lucide-react';
+import { updateReadingLog, deleteReadingLog } from '../firebase/logService';
 
-const TYPE_STYLES = {
-  hifz:     { label: "Hifz",      bg: "bg-violet-50",  border: "border-violet-200", text: "text-violet-700"  },
-  murajaah: { label: "Muraja'ah", bg: "bg-amber-50",   border: "border-amber-200",  text: "text-amber-700"   },
-  tilawah:  { label: "Tilawah",   bg: "bg-emerald-50", border: "border-emerald-200",text: "text-emerald-700" },
-};
+export default function LogModal({ log, onClose }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-function formatFullDate(dateStr) {
-  if (!dateStr) return "";
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
-    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  // Convert database string format back to UI Dropdown format
+  const getInitialUIType = (dbType) => {
+    if (dbType === "memorization") return "Hifz";
+    if (dbType === "revision") return "Muraja'ah";
+    return "Tilawah";
+  };
+
+  const [editData, setEditData] = useState({
+    type: getInitialUIType(log.type),
+    quranPage: log.quranPage || '',
+    surahName: log.surahName || '',
+    startAyat: log.startAyat || '',
+    endAyat: log.endAyat || '',
+    notes: log.notes || ''
   });
-}
 
-// ─── Data row ────────────────────────────────────────────────────────────────
-const DataRow = ({ icon: Icon, label, children }) => (
-  <div className="flex gap-3">
-    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-stone-100">
-      <Icon size={14} strokeWidth={1.75} className="text-emerald-700" />
-    </div>
-    <div className="flex flex-col gap-0.5 min-w-0">
-      <span className="text-[10px] uppercase tracking-widest font-semibold text-stone-400 select-none">
-        {label}
-      </span>
-      <div className="text-sm text-stone-700 leading-snug">{children}</div>
-    </div>
-  </div>
-);
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditData(prev => ({ ...prev, [name]: value }));
+  };
 
-// ─────────────────────────────────────────────────────────────────────────────
+  const handleSave = async () => {
+    setIsProcessing(true);
+    
+    // Map UI dropdown back to the exact strings the database requires
+    let dbType = "reading";
+    if (editData.type === "Hifz") dbType = "memorization";
+    else if (editData.type === "Muraja'ah") dbType = "revision";
+    else if (editData.type === "Tilawah") dbType = "reading";
 
-export default function LogModal({ log, onClose, onEdit }) {
-  if (!log) return null;
+    const updatedPayload = {
+      quranPage: Number(editData.quranPage),
+      surahName: editData.surahName,
+      startAyat: Number(editData.startAyat),
+      endAyat: Number(editData.endAyat),
+      type: dbType,
+      notes: editData.notes
+    };
 
-  const typeStyle = TYPE_STYLES[log.type] ?? TYPE_STYLES.tilawah;
+    try {
+      // log.id is automatically fetched when you pull logs from Firestore
+      await updateReadingLog(log.id, updatedPayload);
+      setIsEditing(false); // Turn off edit mode
+      // Note: A page refresh will automatically pull the new data
+      window.location.reload(); 
+    } catch (error) {
+      console.error("Error updating log:", error);
+      alert("Failed to update log.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  // Prevent body scroll while modal is open
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
+  const handleDelete = async () => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this log? This cannot be undone.");
+    if (confirmDelete) {
+      setIsProcessing(true);
+      try {
+        await deleteReadingLog(log.id);
+        window.location.reload(); // Refresh the page to clear the deleted dot
+      } catch (error) {
+        console.error("Error deleting log:", error);
+        alert("Failed to delete log.");
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+  };
 
   return (
-    /* Backdrop */
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(6, 25, 18, 0.55)", backdropFilter: "blur(6px)" }}
-      onClick={onClose}
-      aria-modal="true"
-      role="dialog"
-      aria-label="Log detail"
-    >
-      {/* Panel — stop click propagation so backdrop-click-to-close works */}
-      <div
-        className="
-          relative w-full max-w-md
-          rounded-3xl bg-white
-          shadow-2xl shadow-emerald-950/25
-          overflow-hidden
-          animate-[modal-in_0.22s_ease-out]
-        "
-        style={{
-          animation: "modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <style>{`
-          @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.94) translateY(12px); }
-            to   { opacity: 1; transform: scale(1)    translateY(0);    }
-          }
-        `}</style>
-
-        {/* ── Coloured header band ────────────────────────────────────────── */}
-        <div className="relative bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 px-6 pt-6 pb-8">
-          {/* Ornament */}
-          <div className="pointer-events-none absolute -right-6 -top-6 opacity-[0.08]" aria-hidden="true">
-            <svg viewBox="0 0 120 120" width="120" height="120" fill="white">
-              <polygon points="60,3 72,42 113,42 80,66 92,105 60,81 28,105 40,66 7,42 48,42" />
-            </svg>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-sm animate-fade-in">
+      <div className="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+        
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 text-emerald-800 rounded-xl flex items-center justify-center">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-lg">Reading Details</h3>
+              <p className="text-xs text-gray-500 font-medium">{log.date}</p>
+            </div>
           </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            className="
-              absolute top-4 right-4
-              flex h-8 w-8 items-center justify-center
-              rounded-full bg-white/10 text-white/70
-              hover:bg-white/20 hover:text-white
-              transition-all duration-150
-            "
-          >
-            <X size={15} strokeWidth={2} />
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-5 h-5" />
           </button>
-
-          {/* Date */}
-          <p className="text-[11px] uppercase tracking-widest text-emerald-300/80 font-medium select-none">
-            Session Record
-          </p>
-          <h2
-            className="mt-1 text-xl font-bold text-white leading-tight"
-            style={{ fontFamily: "'Georgia', serif" }}
-          >
-            {formatFullDate(log.date)}
-          </h2>
-
-          {/* Activity badge */}
-          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1">
-            <Tag size={11} className="text-emerald-300" />
-            <span className="text-[11px] font-semibold text-emerald-200 uppercase tracking-wider">
-              Activity Type:
-            </span>
-            <span className="text-[11px] font-bold text-white">
-              {typeStyle.label}
-            </span>
-          </div>
         </div>
 
-        {/* Pull-down card overlap */}
-        <div className="-mt-4 mx-4 rounded-2xl bg-white border border-stone-100 shadow-sm shadow-stone-200/60 px-5 py-5 flex flex-col gap-4">
-
-          {/* Page */}
-          <DataRow icon={BookOpen} label="Location">
-            <span className="font-semibold text-stone-800">Page {log.quranPage}</span>
-          </DataRow>
-
-          {/* Verses */}
-          <DataRow icon={ListOrdered} label="Verses">
-            <span>
-              <span className="font-semibold text-stone-800">{log.surahName}</span>
-              {log.startAyat && log.endAyat && (
-                <span className="text-stone-500">
-                  {" — "}Ayat {log.startAyat}–{log.endAyat}
-                </span>
+        {/* Modal Body */}
+        <div className="p-6 overflow-y-auto space-y-4">
+          {!isEditing ? (
+            /* --- VIEW MODE --- */
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Surah</p>
+                  <p className="text-gray-800 font-semibold">{log.surahName}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Type</p>
+                  <p className="text-emerald-700 font-semibold">{getInitialUIType(log.type)}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Page</p>
+                  <p className="text-gray-800 font-semibold">{log.quranPage}</p>
+                </div>
+                <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Ayat Range</p>
+                  <p className="text-gray-800 font-semibold">{log.startAyat} - {log.endAyat}</p>
+                </div>
+              </div>
+              {log.notes && (
+                <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100">
+                  <p className="text-xs text-emerald-600 font-bold uppercase tracking-wider mb-1.5">Personal Notes</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">{log.notes}</p>
+                </div>
               )}
-            </span>
-          </DataRow>
-
-          {/* Notes */}
-          {log.notes && (
-            <DataRow icon={StickyNote} label="Notes">
-              <blockquote
-                className="
-                  mt-1 rounded-xl
-                  border-l-2 border-emerald-400
-                  bg-stone-50 px-4 py-3
-                  text-sm text-stone-600 leading-relaxed italic
-                "
-              >
-                "{log.notes}"
-              </blockquote>
-            </DataRow>
+            </div>
+          ) : (
+            /* --- EDIT MODE --- */
+            <div className="space-y-4 animate-fade-in">
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Reading Type</label>
+                <select
+                  name="type"
+                  value={editData.type}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none text-sm"
+                >
+                  <option value="Hifz">Hifz (New Memorization)</option>
+                  <option value="Muraja'ah">Muraja'ah (Revision)</option>
+                  <option value="Tilawah">Tilawah (Normal Reading)</option>
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Surah Name</label>
+                  <input type="text" name="surahName" value={editData.surahName} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Page</label>
+                  <input type="number" name="quranPage" value={editData.quranPage} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Start Ayat</label>
+                  <input type="number" name="startAyat" value={editData.startAyat} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">End Ayat</label>
+                  <input type="number" name="endAyat" value={editData.endAyat} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Notes</label>
+                <textarea name="notes" value={editData.notes} onChange={handleChange} rows="2" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"></textarea>
+              </div>
+            </div>
           )}
         </div>
 
-        {/* ── Footer action ───────────────────────────────────────────────── */}
-        <div className="px-4 py-4">
-          <button
-            onClick={() => { onEdit?.(log); onClose(); }}
-            className="
-              w-full flex items-center justify-center gap-2
-              rounded-xl bg-emerald-800 px-6 py-3.5
-              text-sm font-semibold tracking-wide text-white
-              shadow-md shadow-emerald-900/20
-              hover:bg-emerald-700 hover:-translate-y-px hover:shadow-lg
-              active:translate-y-0
-              transition-all duration-200
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
-            "
-          >
-            <Pencil size={14} strokeWidth={2} />
-            Edit Log Entry
-          </button>
+        {/* Modal Footer (Action Buttons) */}
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-2">
+          {!isEditing ? (
+            <>
+              <button 
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 rounded-xl transition-colors flex items-center gap-2 mr-auto"
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-sm transition-colors flex items-center gap-2"
+              >
+                <Edit2 className="w-4 h-4" /> Edit Record
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                onClick={() => setIsEditing(false)}
+                disabled={isProcessing}
+                className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-200 bg-gray-100 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSave}
+                disabled={isProcessing}
+                className="px-5 py-2 text-sm font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-4 h-4" /> {isProcessing ? "Saving..." : "Save Changes"}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

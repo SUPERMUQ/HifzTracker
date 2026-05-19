@@ -24,6 +24,9 @@ import {
   orderBy,
   getDocs,
   serverTimestamp,
+  doc, 
+  updateDoc, 
+  deleteDoc,
 } from "firebase/firestore";
 
 import { db } from "./config";
@@ -141,4 +144,16 @@ export async function getLogsByMonth(userId, yearMonthStr) {
     id: doc.id,
     ...doc.data(),
   }));
+}
+
+// Update an existing log
+export async function updateReadingLog(logId, updatedData) {
+  const logRef = doc(db, "logs", logId);
+  await updateDoc(logRef, updatedData);
+}
+
+// Delete an existing log
+export async function deleteReadingLog(logId) {
+  const logRef = doc(db, "logs", logId);
+  await deleteDoc(logRef);
 }
