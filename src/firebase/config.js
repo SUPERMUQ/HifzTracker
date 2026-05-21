@@ -17,7 +17,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 // Reference keys dynamically using Vite's environment injector
 const firebaseConfig = {
@@ -35,4 +35,10 @@ const app = initializeApp(firebaseConfig);
 
 // Export services
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Export Firestore with robust offline persistence enabled
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager()
+  })
+});

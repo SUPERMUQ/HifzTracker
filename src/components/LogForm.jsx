@@ -88,9 +88,13 @@ const inputNormal = `${inputBase} border-gray-200 hover:border-gray-300`;
 const inputError  = `${inputBase} border-red-300 bg-red-50/30 focus:ring-red-400`;
 
 export default function LogForm({ userId }) {
-  const today = new Date().toISOString().split('T')[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [formData, setFormData] = useState({
+    ...EMPTY_FORM,
+    date: today
+  });
   const [errors, setErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);

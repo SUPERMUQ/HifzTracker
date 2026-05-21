@@ -31,6 +31,23 @@ export default function Dashboard({ user }) {
   // 4. Sessions: Total count of recorded logs
   const sessions = logs.length;
 
+  // --- Session Type Breakdown Calculations ---
+  const typeCounts = logs.reduce((acc, log) => {
+    // Map standard database type strings
+    const type = log.type || "reading";
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, { memorization: 0, revision: 0, reading: 0 });
+
+  const getPercentage = (count) => {
+    if (sessions === 0) return 0;
+    return Math.round((count / sessions) * 100);
+  };
+
+  const memorizationPct = getPercentage(typeCounts.memorization);
+  const revisionPct = getPercentage(typeCounts.revision);
+  const readingPct = getPercentage(typeCounts.reading);
+
   function calculateStreak(logsList) {
     if (!logsList || logsList.length === 0) return 0;
 
@@ -151,6 +168,104 @@ export default function Dashboard({ user }) {
             {renderStatValue(sessions)}
           </div>
         </div>
+      </div>
+
+      {/* Session Type Breakdown Visual Component */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-gray-800 font-display">Session Type Distribution</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Visual breakdown of your Quranic engagement types</p>
+        </div>
+
+        {loading ? (
+          <div className="space-y-4">
+            <div className="h-4 bg-gray-100 rounded-full animate-pulse" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="h-16 bg-gray-50 border border-gray-100/50 rounded-xl animate-pulse" />
+              <div className="h-16 bg-gray-50 border border-gray-100/50 rounded-xl animate-pulse" />
+              <div className="h-16 bg-gray-50 border border-gray-100/50 rounded-xl animate-pulse" />
+            </div>
+          </div>
+        ) : sessions === 0 ? (
+          <div className="py-8 text-center text-gray-400 text-sm font-medium animate-fade-in">
+            No session logs available. Start logging to see your distribution!
+          </div>
+        ) : (
+          <div className="space-y-6 animate-fade-in">
+            {/* Stacked Progress Bar */}
+            <div className="w-full h-4 bg-gray-100/80 rounded-full overflow-hidden flex shadow-inner">
+              {typeCounts.memorization > 0 && (
+                <div 
+                  style={{ width: `${memorizationPct}%` }} 
+                  className="bg-emerald-600 transition-all duration-500 hover:brightness-95 cursor-help"
+                  title={`Hifz: ${typeCounts.memorization} sessions (${memorizationPct}%)`}
+                />
+              )}
+              {typeCounts.revision > 0 && (
+                <div 
+                  style={{ width: `${revisionPct}%` }} 
+                  className="bg-amber-500 transition-all duration-500 hover:brightness-95 cursor-help"
+                  title={`Muraja'ah: ${typeCounts.revision} sessions (${revisionPct}%)`}
+                />
+              )}
+              {typeCounts.reading > 0 && (
+                <div 
+                  style={{ width: `${readingPct}%` }} 
+                  className="bg-blue-500 transition-all duration-500 hover:brightness-95 cursor-help"
+                  title={`Tilawah: ${typeCounts.reading} sessions (${readingPct}%)`}
+                />
+              )}
+            </div>
+
+            {/* Interactive Grid Legend */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Hifz */}
+              <div className="bg-emerald-50/20 hover:bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100/30 transition-all duration-300 flex items-center justify-between group cursor-default">
+                <div className="flex items-center gap-3">
+                  <span className="w-3.5 h-3.5 bg-emerald-600 rounded-full ring-4 ring-emerald-50 group-hover:scale-110 transition-transform duration-200" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Hifz</p>
+                    <p className="text-sm font-semibold text-gray-400 mt-0.5">Memorization</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-emerald-800">{typeCounts.memorization}</p>
+                  <p className="text-xs font-medium text-emerald-600/80">{memorizationPct}%</p>
+                </div>
+              </div>
+
+              {/* Muraja'ah */}
+              <div className="bg-amber-50/10 hover:bg-amber-50/30 p-4 rounded-2xl border border-amber-100/20 transition-all duration-300 flex items-center justify-between group cursor-default">
+                <div className="flex items-center gap-3">
+                  <span className="w-3.5 h-3.5 bg-amber-500 rounded-full ring-4 ring-amber-50 group-hover:scale-110 transition-transform duration-200" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Muraja'ah</p>
+                    <p className="text-sm font-semibold text-gray-400 mt-0.5">Revision</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-amber-800">{typeCounts.revision}</p>
+                  <p className="text-xs font-medium text-amber-600/80">{revisionPct}%</p>
+                </div>
+              </div>
+
+              {/* Tilawah */}
+              <div className="bg-blue-50/10 hover:bg-blue-50/30 p-4 rounded-2xl border border-blue-100/20 transition-all duration-300 flex items-center justify-between group cursor-default">
+                <div className="flex items-center gap-3">
+                  <span className="w-3.5 h-3.5 bg-blue-500 rounded-full ring-4 ring-blue-50 group-hover:scale-110 transition-transform duration-200" />
+                  <div>
+                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Tilawah</p>
+                    <p className="text-sm font-semibold text-gray-400 mt-0.5">Reading</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold text-blue-800">{typeCounts.reading}</p>
+                  <p className="text-xs font-medium text-blue-600/80">{readingPct}%</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Log Form Area — Inject the authentic user login ID */}

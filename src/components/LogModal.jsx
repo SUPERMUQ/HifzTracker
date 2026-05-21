@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Edit2, Save, Trash2, BookOpen } from 'lucide-react';
 import { updateReadingLog, deleteReadingLog } from '../firebase/logService';
 
-export default function LogModal({ log, onClose }) {
+export default function LogModal({ log, onClose, onLogChange }) {
   const [isEditing, setIsEditing] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -50,7 +50,8 @@ export default function LogModal({ log, onClose }) {
       await updateReadingLog(log.id, updatedPayload);
       setIsEditing(false); // Turn off edit mode
       // Note: A page refresh will automatically pull the new data
-      window.location.reload(); 
+      if (onLogChange) onLogChange();
+      onClose(); 
     } catch (error) {
       console.error("Error updating log:", error);
       alert("Failed to update log.");
@@ -65,7 +66,8 @@ export default function LogModal({ log, onClose }) {
       setIsProcessing(true);
       try {
         await deleteReadingLog(log.id);
-        window.location.reload(); // Refresh the page to clear the deleted dot
+        if (onLogChange) onLogChange();
+        onClose();
       } catch (error) {
         console.error("Error deleting log:", error);
         alert("Failed to delete log.");

@@ -16,26 +16,25 @@ export default function History({ user }) {
   const month = currentDate.getMonth();
 
   // Load live user data from Firestore whenever the month grid flips
-  useEffect(() => {
-    async function fetchMonthlyLogs() {
-      // 2. FIXED: Prevents crashing if the user object isn't fully loaded yet
-      if (!user?.uid) return; 
+  const fetchMonthlyLogs = React.useCallback(async () => {
+    if (!user?.uid) return; 
 
-      setLoading(true);
-      // Format argument format as: "YYYY-MM"
-      const yearMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
-      try {
-        const data = await getLogsByMonth(user.uid, yearMonthStr);
-        setDbLogs(data);
-      } catch (error) {
-        console.error("Error reading log history:", error);
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    // Format argument format as: "YYYY-MM"
+    const yearMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+    try {
+      const data = await getLogsByMonth(user.uid, yearMonthStr);
+      setDbLogs(data);
+    } catch (error) {
+      console.error("Error reading log history:", error);
+    } finally {
+      setLoading(false);
     }
+  }, [user?.uid, year, month]);
+
+  useEffect(() => {
     fetchMonthlyLogs();
-    // 3. FIXED: Add user?.uid to the dependency array so it updates when they log in
-  }, [currentDate, year, month, user?.uid]); 
+  }, [fetchMonthlyLogs]); 
 
   // Calendar rendering computations
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -145,6 +144,7 @@ export default function History({ user }) {
             setIsModalOpen(false);
             setSelectedLog(null);
           }} 
+          onLogChange={fetchMonthlyLogs}
         />
       )}
     </div>
