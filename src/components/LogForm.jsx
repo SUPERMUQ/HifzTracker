@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, CheckCircle, AlertCircle } from 'lucide-react';
+import { BookOpen, CheckCircle, AlertCircle, Calendar, Hash, Bookmark, MessageSquare, Compass } from 'lucide-react';
 import { addReadingLog } from '../firebase/logService';
 
 const SURAHS = [
@@ -72,10 +72,16 @@ const EMPTY_FORM = {
   notes: ''
 };
 
+const sessionTypes = [
+  { id: 'Hifz', label: 'Hifz', desc: 'Memorization', color: 'emerald' },
+  { id: "Muraja'ah", label: "Muraja'ah", desc: 'Revision', color: 'amber' },
+  { id: 'Tilawah', label: 'Tilawah', desc: 'Reading', color: 'blue' }
+];
+
 // Inline validation error component
 const FieldError = ({ message }) =>
   message ? (
-    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-500">
+    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-red-500 animate-slide-in">
       <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
       {message}
     </p>
@@ -83,9 +89,9 @@ const FieldError = ({ message }) =>
 
 // Input base classes
 const inputBase =
-  "w-full px-4 py-3 bg-white border rounded-xl text-sm text-gray-800 placeholder-gray-300 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent";
-const inputNormal = `${inputBase} border-gray-200 hover:border-gray-300`;
-const inputError  = `${inputBase} border-red-300 bg-red-50/30 focus:ring-red-400`;
+  "w-full pl-10 pr-4 py-3 bg-white border rounded-xl text-sm text-stone-800 placeholder-stone-300 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500";
+const inputNormal = `${inputBase} border-stone-200 hover:border-stone-300`;
+const inputError  = `${inputBase} border-red-300 bg-red-50/15 focus:ring-red-400/10 focus:border-red-400`;
 
 export default function LogForm({ userId }) {
   const now = new Date();
@@ -188,19 +194,19 @@ export default function LogForm({ userId }) {
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto">
+    <div className="w-full">
       {/* Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-stone-200/50">
 
         {/* Header */}
-        <div className="px-6 pt-7 pb-5 border-b border-gray-100 bg-gradient-to-br from-emerald-50/60 to-white">
+        <div className="px-6 pt-7 pb-5 border-b border-stone-100 bg-gradient-to-br from-emerald-50/40 via-white to-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-md shadow-emerald-200">
+            <div className="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-700/10">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-800 leading-tight">Log Your Session</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Record your progress to maintain your streak.</p>
+              <h2 className="text-lg font-bold text-stone-850 leading-tight font-display">Log Your Session</h2>
+              <p className="text-xs text-stone-400 mt-0.5 font-medium">Record your progress to maintain your streak.</p>
             </div>
           </div>
         </div>
@@ -210,26 +216,65 @@ export default function LogForm({ userId }) {
 
           {/* Success banner */}
           {showSuccess && (
-            <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-              <span className="text-sm font-medium">Progress logged successfully!</span>
+            <div className="p-4 bg-emerald-50/50 border border-emerald-100 text-emerald-800 rounded-2xl flex items-center gap-3 animate-fade-in">
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <span className="text-sm font-semibold">Progress logged successfully!</span>
             </div>
           )}
 
           {/* Submit error banner */}
           {errors.submit && (
-            <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <span className="text-sm font-medium">{errors.submit}</span>
+            <div className="p-4 bg-red-50/50 border border-red-100 text-red-700 rounded-2xl flex items-center gap-3 animate-fade-in">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <span className="text-sm font-semibold">{errors.submit}</span>
             </div>
           )}
 
-          {/* Date & Reading Type */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-                Date
-              </label>
+          {/* Segmented control for Reading Type */}
+          <div>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">
+              Reading Type
+            </label>
+            <div className="grid grid-cols-3 gap-2 bg-stone-50 p-1.5 rounded-2xl border border-stone-200/50">
+              {sessionTypes.map((typeObj) => {
+                const isActive = formData.type === typeObj.id;
+                let activeStyles = "";
+                if (isActive) {
+                  if (typeObj.color === 'emerald') activeStyles = "bg-emerald-700 text-white shadow-md shadow-emerald-700/15";
+                  else if (typeObj.color === 'amber') activeStyles = "bg-amber-500 text-white shadow-md shadow-amber-500/15";
+                  else activeStyles = "bg-blue-500 text-white shadow-md shadow-blue-500/15";
+                }
+                
+                return (
+                  <button
+                    key={typeObj.id}
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, type: typeObj.id }))}
+                    className={`relative py-2 px-1 rounded-xl text-center transition-all duration-200 cursor-pointer focus:outline-none ${
+                      isActive 
+                        ? `${activeStyles} font-bold scale-[1.02]` 
+                        : "text-stone-400 hover:text-stone-700 hover:bg-stone-100/50 font-medium"
+                    }`}
+                  >
+                    <span className="block text-[13px] tracking-tight">{typeObj.label}</span>
+                    <span className={`block text-[8px] mt-0.5 font-semibold tracking-wider ${isActive ? "text-emerald-100/80" : "text-stone-300"}`}>
+                      {typeObj.desc}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Date Selector */}
+          <div>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              Session Date
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <Calendar className="w-4 h-4" />
+              </div>
               <input
                 type="date"
                 name="date"
@@ -238,68 +283,63 @@ export default function LogForm({ userId }) {
                 max={today}
                 className={errors.date ? inputError : inputNormal}
               />
-              <FieldError message={errors.date} />
             </div>
-            <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-                Reading Type
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className={`${inputNormal} cursor-pointer`}
-              >
-                <option value="Hifz">Hifz (New Memorization)</option>
-                <option value="Muraja'ah">Muraja'ah (Revision)</option>
-                <option value="Tilawah">Tilawah (Normal Reading)</option>
-              </select>
-            </div>
+            <FieldError message={errors.date} />
           </div>
 
           {/* Divider */}
-          <div className="border-t border-dashed border-gray-100" />
+          <div className="border-t border-dashed border-stone-100" />
 
-          {/* Surah & Page */}
+          {/* Surah Name & Page */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
                 Surah Name
               </label>
-              <input
-                type="text"
-                list="surahList"
-                name="surahName"
-                value={formData.surahName}
-                onChange={handleChange}
-                placeholder="Search surah..."
-                autoComplete="off"
-                className={errors.surahName ? inputError : inputNormal}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                  <Compass className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  list="surahList"
+                  name="surahName"
+                  value={formData.surahName}
+                  onChange={handleChange}
+                  placeholder="Search surah..."
+                  autoComplete="off"
+                  className={errors.surahName ? inputError : inputNormal}
+                />
+              </div>
               <datalist id="surahList">
                 {SURAHS.map(surah => <option key={surah.id} value={surah.name} />)}
               </datalist>
               <FieldError message={errors.surahName} />
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-                Quran Page
-                {selectedSurahInfo && (
-                  <span className="ml-1.5 text-emerald-600 normal-case font-normal">
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+                Quran Page {selectedSurahInfo && (
+                  <span className="ml-1 text-emerald-600 normal-case font-semibold">
                     (starts p.{selectedSurahInfo.page})
                   </span>
                 )}
               </label>
-              <input
-                type="text"
-                list="pageList"
-                name="quranPage"
-                value={formData.quranPage}
-                onChange={handleChange}
-                placeholder="e.g. 1 – 604"
-                autoComplete="off"
-                className={errors.quranPage ? inputError : inputNormal}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                  <Hash className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  list="pageList"
+                  name="quranPage"
+                  value={formData.quranPage}
+                  onChange={handleChange}
+                  placeholder="e.g. 1 – 604"
+                  autoComplete="off"
+                  className={errors.quranPage ? inputError : inputNormal}
+                />
+              </div>
               <datalist id="pageList">
                 {pages.map(page => <option key={page} value={page} />)}
               </datalist>
@@ -310,43 +350,53 @@ export default function LogForm({ userId }) {
           {/* Ayat Range */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-                Start Ayat
-                {selectedSurahInfo && (
-                  <span className="ml-1.5 text-gray-400 normal-case font-normal">
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+                Start Ayat {selectedSurahInfo && (
+                  <span className="ml-1 text-stone-400 normal-case font-medium">
                     (1–{selectedSurahInfo.ayahs})
                   </span>
                 )}
               </label>
-              <input
-                type="text"
-                list="startAyatList"
-                name="startAyat"
-                value={formData.startAyat}
-                onChange={handleChange}
-                placeholder="Start ayat..."
-                autoComplete="off"
-                className={errors.startAyat ? inputError : inputNormal}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                  <Bookmark className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  list="startAyatList"
+                  name="startAyat"
+                  value={formData.startAyat}
+                  onChange={handleChange}
+                  placeholder="Start ayat..."
+                  autoComplete="off"
+                  className={errors.startAyat ? inputError : inputNormal}
+                />
+              </div>
               <datalist id="startAyatList">
                 {availableAyahs.map(ayat => <option key={ayat} value={ayat} />)}
               </datalist>
               <FieldError message={errors.startAyat} />
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
+              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
                 End Ayat
               </label>
-              <input
-                type="text"
-                list="endAyatList"
-                name="endAyat"
-                value={formData.endAyat}
-                onChange={handleChange}
-                placeholder="End ayat..."
-                autoComplete="off"
-                className={errors.endAyat ? inputError : inputNormal}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                  <Bookmark className="w-4 h-4" />
+                </div>
+                <input
+                  type="text"
+                  list="endAyatList"
+                  name="endAyat"
+                  value={formData.endAyat}
+                  onChange={handleChange}
+                  placeholder="End ayat..."
+                  autoComplete="off"
+                  className={errors.endAyat ? inputError : inputNormal}
+                />
+              </div>
               <datalist id="endAyatList">
                 {availableAyahs.map(ayat => <option key={ayat} value={ayat} />)}
               </datalist>
@@ -356,17 +406,22 @@ export default function LogForm({ userId }) {
 
           {/* Notes */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">
-              Personal Notes <span className="text-gray-300 font-normal normal-case">— optional</span>
+            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              Personal Notes <span className="text-stone-300 font-normal normal-case">— optional</span>
             </label>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              rows="3"
-              placeholder="Reflections on today's reading..."
-              className={`${inputNormal} resize-none`}
-            />
+            <div className="relative">
+              <div className="absolute top-3.5 left-3.5 pointer-events-none text-stone-400">
+                <MessageSquare className="w-4 h-4" />
+              </div>
+              <textarea
+                name="notes"
+                value={formData.notes}
+                onChange={handleChange}
+                rows="3"
+                placeholder="Reflections on today's reading..."
+                className={`${inputNormal} pl-10 resize-none`}
+              />
+            </div>
           </div>
         </div>
 
@@ -376,7 +431,7 @@ export default function LogForm({ userId }) {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 disabled:bg-emerald-400 text-white font-semibold py-3.5 px-4 rounded-xl shadow-md shadow-emerald-100 transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 disabled:bg-emerald-450 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-700/10 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
           >
             <BookOpen className="w-5 h-5" />
             {isSubmitting ? "Saving..." : "Log Progress"}
