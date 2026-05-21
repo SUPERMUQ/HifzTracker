@@ -27,6 +27,7 @@ import {
   doc, 
   updateDoc, 
   deleteDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 import { db } from "./config";
@@ -156,4 +157,25 @@ export async function updateReadingLog(logId, updatedData) {
 export async function deleteReadingLog(logId) {
   const logRef = doc(db, "logs", logId);
   await deleteDoc(logRef);
+}
+
+// Subscribe to all logs for a given user in real-time
+export function subscribeToUserLogs(userId, callback) {
+  if (!userId) throw new Error("subscribeToUserLogs: userId is required.");
+
+  const logsRef = collection(db, "logs");
+  const q = query(
+    logsRef,
+    where("userId", "==", userId)
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const logs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+    callback(logs);
+  }, (error) => {
+    console.error("Error subscribing to user logs:", error);
+  });
 }
