@@ -16,15 +16,75 @@ const linkClasses = ({ isActive }) =>
       : "text-stone-500 hover:bg-emerald-50 hover:text-emerald-800",
   ].join(" ");
 
-// ─── Geometric ornament SVG (Islamic-inspired star motif) ─────────────────────
-const StarOrnament = () => (
+// ─── Gold and Emerald Open Quran Book Logo ───────────────────────────────────
+const QuranLogo = () => (
   <svg
-    viewBox="0 0 40 40"
-    className="w-7 h-7 text-emerald-600 opacity-90"
-    fill="currentColor"
+    viewBox="0 0 64 64"
+    className="w-8 h-8 filter drop-shadow-sm flex-shrink-0"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
   >
-    <polygon points="20,2 23.5,14.5 36,14.5 25.5,22 29,34.5 20,27 11,34.5 14.5,22 4,14.5 16.5,14.5" />
+    {/* Rehal Book Stand (Gold) */}
+    <path
+      d="M12 48 L22 36 L32 44 L42 36 L52 48"
+      stroke="#d97706"
+      strokeWidth="3.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <path
+      d="M20 48 L44 48"
+      stroke="#d97706"
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+
+    {/* Book Pages Base (Emerald Shadow) */}
+    <path
+      d="M32 36 C24 30 16 32 8 38 L8 18 C16 12 24 10 32 16 C40 10 48 12 56 18 L56 38 C48 32 40 30 32 36 Z"
+      fill="#065f46"
+    />
+
+    {/* Book Left Page (Emerald Light Gradient overlay) */}
+    <path
+      d="M32 16 C24 10 16 12 8 18 L8 36 C16 30 24 28 32 34 Z"
+      fill="#047857"
+      stroke="#fbbf24"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+
+    {/* Book Right Page (Emerald Gradient overlay) */}
+    <path
+      d="M32 16 C40 10 48 12 56 18 L56 36 C48 30 40 28 32 34 Z"
+      fill="#065f46"
+      stroke="#fbbf24"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+
+    {/* Calligraphic script marks inside Quran pages (Gold Lines) */}
+    <path
+      d="M14 22 H24 M12 26 H26 M14 30 H22"
+      stroke="#fef08a"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      opacity="0.8"
+    />
+    <path
+      d="M38 22 H48 M36 26 H50 M40 30 H48"
+      stroke="#fef08a"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      opacity="0.8"
+    />
+
+    {/* Glowing Center Ayah Mark (Gold Star/Sparkle) */}
+    <path
+      d="M32 11 L33.5 14 L36.5 14 L34 16 L35.5 19 L32 17 L28.5 19 L30 16 L27.5 14 L30.5 14 Z"
+      fill="#fbbf24"
+    />
   </svg>
 );
 
@@ -41,16 +101,16 @@ const Sidebar = () => (
     "
   >
     {/* Brand / Logo */}
-    <div className="flex items-center gap-3 px-6 py-6 border-b border-stone-100">
-      <StarOrnament />
+    <div className="flex items-center gap-3 px-6 py-5 border-b border-stone-100">
+      <QuranLogo />
       <div className="flex flex-col leading-tight">
         <span
-          className="text-base font-bold tracking-tight text-emerald-900"
-          style={{ fontFamily: "'Georgia', serif", letterSpacing: "-0.02em" }}
+          className="text-base font-bold tracking-tight text-emerald-950 font-display"
+          style={{ letterSpacing: "-0.01em" }}
         >
           Hifz
         </span>
-        <span className="text-[10px] uppercase tracking-widest text-stone-400 font-medium">
+        <span className="text-[10px] uppercase tracking-widest text-stone-400 font-extrabold">
           Tracker
         </span>
       </div>
