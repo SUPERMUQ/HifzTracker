@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "hifztracker-811e8",
     "public": "dist",
     "ignore": [
       "firebase.json",

@@ -3,7 +3,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import History from "./pages/History";
-import AuthPage from "./pages/AuthPage"; // We will create this next!
+import AuthPage from "./pages/AuthPage";
+import LandingPage from "./pages/LandingPage";
 import { subscribeToAuthChanges, logoutUser } from "./firebase/authService";
 
 export default function App() {
@@ -27,18 +28,13 @@ export default function App() {
     );
   }
 
-  // If not logged in, show the Auth screen exclusively
-  if (!user) {
-    return <AuthPage />;
-  }
-
   // Fallback Profile Page Component with a Log Out action button
   const Profile = () => (
     <div className="flex flex-col gap-4 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm max-w-xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-emerald-900">Profile Settings</h1>
         <p className="text-stone-500 text-sm mt-1">Logged in securely as:</p>
-        <p className="text-gray-800 font-mono mt-1 text-sm bg-gray-50 p-2.5 rounded-lg border border-gray-200">{user.email}</p>
+        <p className="text-gray-800 font-mono mt-1 text-sm bg-gray-50 p-2.5 rounded-lg border border-gray-200">{user?.email}</p>
       </div>
       <button 
         onClick={() => logoutUser()}
@@ -49,6 +45,20 @@ export default function App() {
     </div>
   );
 
+  // Unauthenticated Routes
+  if (!user) {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    );
+  }
+
+  // Authenticated Routes
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-stone-50 flex flex-col md:flex-row">
