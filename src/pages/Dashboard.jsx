@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import LogForm from '../components/LogForm';
-import { Trophy, Calendar, Target, Flame } from 'lucide-react';
+import { Trophy, Calendar, Target, Flame, ChevronLeft, ChevronRight, Sparkles, BookOpen, Activity } from 'lucide-react';
 import { subscribeToUserLogs } from '../firebase/logService';
 
 const QURAN_VERSES = [
@@ -30,7 +31,6 @@ const QURAN_VERSES = [
   }
 ];
 
-// Accept the user object from App.jsx
 export default function Dashboard({ user }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,27 +49,17 @@ export default function Dashboard({ user }) {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentVerseIndex((prev) => (prev + 1) % QURAN_VERSES.length);
-    }, 12000); // Rotate every 12 seconds
+    }, 12000);
     return () => clearInterval(timer);
   }, []);
 
-  // --- Dynamic Stats Calculations ---
-
-  // 1. Current Streak: Consecutive days of logs ending today or yesterday
+  // Dynamic calculations
   const streak = calculateStreak(logs);
-
-  // 2. Total Pages: Number of unique mushaf pages read/memorized
   const totalPages = calculateTotalPages(logs);
-
-  // 3. Monthly Goal: Habit consistency percentage for the current month
   const monthlyGoal = calculateMonthlyGoal(logs);
-
-  // 4. Sessions: Total count of recorded logs
   const sessions = logs.length;
 
-  // --- Session Type Breakdown Calculations ---
   const typeCounts = logs.reduce((acc, log) => {
-    // Map standard database type strings
     const type = log.type || "reading";
     acc[type] = (acc[type] || 0) + 1;
     return acc;
@@ -86,10 +76,7 @@ export default function Dashboard({ user }) {
 
   function calculateStreak(logsList) {
     if (!logsList || logsList.length === 0) return 0;
-
-    // Extract unique dates of activity ("YYYY-MM-DD")
     const activeDates = new Set(logsList.map(log => log.date));
-
     const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
     const now = new Date();
@@ -113,7 +100,7 @@ export default function Dashboard({ user }) {
       const dateStr = formatDate(checkDate);
       if (activeDates.has(dateStr)) {
         currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1); // move back 1 day
+        checkDate.setDate(checkDate.getDate() - 1);
       } else {
         break;
       }
@@ -129,50 +116,60 @@ export default function Dashboard({ user }) {
 
   function calculateMonthlyGoal(logsList) {
     if (!logsList || logsList.length === 0) return 0;
-
     const now = new Date();
     const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth(); // 0-indexed
+    const currentMonth = now.getMonth();
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
 
     const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
     const thisMonthLogs = logsList.filter(log => log.date.startsWith(currentMonthPrefix));
-
     const uniqueDays = new Set(thisMonthLogs.map(log => log.date)).size;
 
     return daysInMonth > 0 ? Math.round((uniqueDays / daysInMonth) * 100) : 0;
   }
 
-  // Premium helper for rendering statistics with clean animations/skeleton states
   const renderStatValue = (val, suffix = "") => {
     if (loading) {
-      return <div className="h-8 w-16 bg-stone-100 rounded-lg animate-pulse mt-1" />;
+      return <div className="h-8 w-16 bg-white/[0.06] rounded-xl animate-pulse mt-1" />;
     }
-    return <p className="text-3xl font-extrabold text-stone-800 tracking-tight">{val}{suffix}</p>;
+    return (
+      <p className="text-3xl font-extrabold text-white tracking-tight font-display mt-0.5">
+        {val}<span className="text-emerald-400 text-lg font-normal ml-0.5">{suffix}</span>
+      </p>
+    );
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="space-y-8 max-w-6xl mx-auto"
+    >
       {/* Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-stone-800 tracking-tight">Assalamu Alaikum,</h1>
-          <p className="text-stone-500 mt-1 font-medium">Track your daily progress and protect your streak.</p>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight font-display flex items-center gap-2">
+            Assalamu Alaikum <span className="text-emerald-400 text-xl font-normal">✨</span>
+          </h1>
+          <p className="text-zinc-400 mt-1 text-sm font-medium">Track your daily Quran checkpoints and protect your streak.</p>
+        </div>
+        <div className="flex items-center gap-2 bg-[#0c0c12] border border-white/[0.08] px-4 py-2 rounded-2xl">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs font-mono text-zinc-300">Live Firebase Cloud Sync</span>
         </div>
       </div>
 
-      {/* Premium Quranic Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800 text-white rounded-3xl p-6 md:p-8 shadow-xl shadow-emerald-950/20 border border-emerald-700/20">
+      {/* SOTD Premium Quranic Welcome Hero Bento Banner */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#091510] via-[#0b1016] to-[#07090e] rounded-3xl p-7 md:p-9 shadow-2xl border border-emerald-500/20">
         {/* Geometric Islamic SVG Pattern Overlay */}
-        <div className="absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none">
+        <div className="absolute inset-0 opacity-[0.06] mix-blend-overlay pointer-events-none">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="islamic-star-pattern" width="60" height="60" patternUnits="userSpaceOnUse">
                 <path d="M30 0 L60 30 L30 60 L0 30 Z" fill="none" stroke="#fbbf24" strokeWidth="0.75" />
-                <path d="M0 0 L60 60 M60 0 L0 60" fill="none" stroke="#fbbf24" strokeWidth="0.5" strokeDasharray="2,2" />
                 <circle cx="30" cy="30" r="10" fill="none" stroke="#fbbf24" strokeWidth="0.75" />
-                <circle cx="30" cy="30" r="4" fill="#fbbf24" />
-                <rect x="15" y="15" width="30" height="30" fill="none" stroke="#fbbf24" strokeWidth="0.5" transform="rotate(45 30 30)" />
+                <circle cx="30" cy="30" r="3" fill="#fbbf24" />
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#islamic-star-pattern)" />
@@ -180,60 +177,69 @@ export default function Dashboard({ user }) {
         </div>
 
         {/* Ambient Glows */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-amber-400/10 rounded-full blur-3xl" />
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-4 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 bg-emerald-800/80 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider text-emerald-200 border border-emerald-700/40">
-                Inspiration of the Day
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="px-3 py-1 bg-emerald-500/10 backdrop-blur-md rounded-full text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-400 border border-emerald-500/25 flex items-center gap-1.5">
+                <Sparkles className="w-3 h-3 text-emerald-400" /> Daily Quran Inspiration
               </span>
-              <span className="px-3 py-1 bg-amber-500/20 backdrop-blur-md rounded-full text-[10px] font-bold uppercase tracking-wider text-amber-300 border border-amber-500/30">
+              <span className="px-3 py-1 bg-amber-500/10 backdrop-blur-md rounded-full text-[10px] font-mono font-bold uppercase tracking-widest text-amber-300 border border-amber-500/20">
                 القرآن الكريم
               </span>
             </div>
 
-            {/* Verse Content */}
-            <div className="space-y-3 transition-all duration-500 ease-in-out">
-              <p 
-                className="text-2xl md:text-3xl font-bold leading-loose text-right text-amber-200/90 drop-shadow-sm min-h-[4rem] md:min-h-[3rem] flex items-center justify-end" 
-                style={{ fontFamily: "'Amiri', serif" }}
-              >
-                {QURAN_VERSES[currentVerseIndex].arabic}
-              </p>
-              <div className="space-y-1">
-                <p className="text-sm md:text-base font-medium text-emerald-50 leading-relaxed italic">
-                  "{QURAN_VERSES[currentVerseIndex].english}"
-                </p>
-                <p className="text-[11px] font-bold text-amber-400/90 uppercase tracking-widest">
-                  — {QURAN_VERSES[currentVerseIndex].surah} ({QURAN_VERSES[currentVerseIndex].verse})
-                </p>
-              </div>
+            {/* Verse Content with AnimatePresence */}
+            <div className="space-y-3 min-h-[6rem] flex flex-col justify-center">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentVerseIndex}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.35 }}
+                  className="space-y-3"
+                >
+                  <p 
+                    className="text-2xl md:text-3xl font-bold leading-loose text-right text-amber-200/95 drop-shadow-[0_2px_10px_rgba(245,158,11,0.2)]" 
+                    style={{ fontFamily: "'Amiri', serif" }}
+                  >
+                    {QURAN_VERSES[currentVerseIndex].arabic}
+                  </p>
+                  <div className="space-y-1">
+                    <p className="text-sm md:text-base font-medium text-zinc-300 leading-relaxed italic">
+                      "{QURAN_VERSES[currentVerseIndex].english}"
+                    </p>
+                    <p className="text-[11px] font-mono font-semibold text-emerald-400/90 uppercase tracking-widest">
+                      — {QURAN_VERSES[currentVerseIndex].surah} ({QURAN_VERSES[currentVerseIndex].verse})
+                    </p>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
           {/* Interactive Navigation controls */}
-          <div className="flex items-center md:flex-col gap-3 justify-end self-end md:self-center">
-            <div className="flex gap-1 bg-emerald-950/40 p-1 rounded-full border border-emerald-800/40">
-              <button
+          <div className="flex items-center md:flex-col gap-3 justify-end self-end md:self-center shrink-0">
+            <div className="flex gap-1.5 bg-black/40 p-1.5 rounded-2xl border border-white/[0.08] backdrop-blur-md">
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentVerseIndex((prev) => (prev - 1 + QURAN_VERSES.length) % QURAN_VERSES.length)}
-                className="p-2 hover:bg-emerald-850 rounded-full transition-colors focus:outline-none cursor-pointer"
+                className="p-2 hover:bg-white/[0.08] rounded-xl transition-colors text-zinc-300 cursor-pointer"
                 aria-label="Previous verse"
               >
-                <svg className="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <button
+                <ChevronLeft className="w-4 h-4 text-emerald-400" />
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setCurrentVerseIndex((prev) => (prev + 1) % QURAN_VERSES.length)}
-                className="p-2 hover:bg-emerald-850 rounded-full transition-colors focus:outline-none cursor-pointer"
+                className="p-2 hover:bg-white/[0.08] rounded-xl transition-colors text-zinc-300 cursor-pointer"
                 aria-label="Next verse"
               >
-                <svg className="w-4 h-4 text-emerald-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
+                <ChevronRight className="w-4 h-4 text-emerald-400" />
+              </motion.button>
             </div>
 
             {/* Dot Indicators */}
@@ -243,7 +249,7 @@ export default function Dashboard({ user }) {
                   key={idx}
                   onClick={() => setCurrentVerseIndex(idx)}
                   className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
-                    idx === currentVerseIndex ? "w-4 bg-amber-400" : "w-1.5 bg-emerald-850 hover:bg-emerald-700"
+                    idx === currentVerseIndex ? "w-5 bg-amber-400 shadow-[0_0_8px_#f59e0b]" : "w-1.5 bg-white/20 hover:bg-white/40"
                   }`}
                   aria-label={`Go to verse ${idx + 1}`}
                 />
@@ -253,101 +259,140 @@ export default function Dashboard({ user }) {
         </div>
       </div>
 
-      {/* Main 12-Column Responsive Dashboard Layout */}
+      {/* Main 12-Column SOTD Bento Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* LEFT COLUMN: Stats Grid & Breakdown (7/12 width) */}
+        {/* LEFT COLUMN: Bento Stats Grid & Breakdown (7/12 width) */}
         <div className="lg:col-span-7 space-y-8">
           
-          {/* Quick Stats Grid */}
+          {/* Quick Stats Bento Grid (2x2) */}
           <div className="grid grid-cols-2 gap-4">
             {/* Current Streak */}
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md hover:border-stone-200/60">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-800">
-                <Flame className="w-6 h-6 fill-current" />
+            <motion.div 
+              whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+              className="bg-[#0c0c12]/90 p-6 rounded-3xl border border-white/[0.08] shadow-xl backdrop-blur-xl flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-emerald-500/15 transition-all duration-500" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 rounded-2xl flex items-center justify-center text-emerald-400 shadow-md">
+                  <Flame className="w-6 h-6 fill-emerald-400" />
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-semibold">Activity</span>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Current Streak</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Active Streak</p>
                 {renderStatValue(streak, streak === 1 ? " Day" : " Days")}
               </div>
-            </div>
+            </motion.div>
 
             {/* Total Pages */}
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md hover:border-stone-200/60">
-              <div className="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
-                <Trophy className="w-6 h-6" />
+            <motion.div 
+              whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+              className="bg-[#0c0c12]/90 p-6 rounded-3xl border border-white/[0.08] shadow-xl backdrop-blur-xl flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-amber-500/15 transition-all duration-500" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-tr from-amber-500/20 to-yellow-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center text-amber-400 shadow-md">
+                  <Trophy className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-semibold">Mushaf</span>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Total Pages</p>
-                {renderStatValue(totalPages)}
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Total Pages</p>
+                {renderStatValue(totalPages, " pages")}
               </div>
-            </div>
+            </motion.div>
 
             {/* Monthly Goal */}
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md hover:border-stone-200/60">
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600">
-                <Target className="w-6 h-6" />
+            <motion.div 
+              whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+              className="bg-[#0c0c12]/90 p-6 rounded-3xl border border-white/[0.08] shadow-xl backdrop-blur-xl flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-blue-500/15 transition-all duration-500" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-tr from-blue-500/20 to-cyan-500/10 border border-blue-500/30 rounded-2xl flex items-center justify-center text-blue-400 shadow-md">
+                  <Target className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-semibold">Consistency</span>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Monthly Goal</p>
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Monthly Rate</p>
                 {renderStatValue(monthlyGoal, "%")}
               </div>
-            </div>
+            </motion.div>
 
             {/* Sessions */}
-            <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm flex items-center gap-4 transition-all duration-200 hover:shadow-md hover:border-stone-200/60">
-              <div className="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center text-purple-600">
-                <Calendar className="w-6 h-6" />
+            <motion.div 
+              whileHover={{ y: -4, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+              className="bg-[#0c0c12]/90 p-6 rounded-3xl border border-white/[0.08] shadow-xl backdrop-blur-xl flex flex-col justify-between relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/5 rounded-full blur-2xl pointer-events-none group-hover:bg-purple-500/15 transition-all duration-500" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-12 h-12 bg-gradient-to-tr from-purple-500/20 to-indigo-500/10 border border-purple-500/30 rounded-2xl flex items-center justify-center text-purple-400 shadow-md">
+                  <Calendar className="w-6 h-6" />
+                </div>
+                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest font-semibold">History</span>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Sessions</p>
-                {renderStatValue(sessions)}
+                <p className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-semibold">Total Sessions</p>
+                {renderStatValue(sessions, " logs")}
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Session Type Breakdown Visual Component */}
-          <div className="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm space-y-6">
-            <div>
-              <h2 className="text-lg font-bold text-stone-850 font-display">Session Type Distribution</h2>
-              <p className="text-xs text-stone-400 mt-0.5 font-medium">Visual breakdown of your Quranic engagement types</p>
+          {/* Session Type Breakdown Visual Bento Component */}
+          <div className="bg-[#0c0c12]/90 p-7 rounded-3xl border border-white/[0.08] shadow-xl backdrop-blur-xl space-y-6 relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-white font-display tracking-tight flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-emerald-400" /> Session Distribution
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5 font-medium">Visual breakdown of your Quranic engagement types</p>
+              </div>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">Real-time</span>
             </div>
 
             {loading ? (
               <div className="space-y-4">
-                <div className="h-4 bg-stone-100 rounded-full animate-pulse" />
+                <div className="h-4 bg-white/[0.06] rounded-full animate-pulse" />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="h-16 bg-stone-50 border border-stone-100/50 rounded-xl animate-pulse" />
-                  <div className="h-16 bg-stone-50 border border-stone-100/50 rounded-xl animate-pulse" />
-                  <div className="h-16 bg-stone-50 border border-stone-100/50 rounded-xl animate-pulse" />
+                  <div className="h-20 bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse" />
+                  <div className="h-20 bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse" />
+                  <div className="h-20 bg-white/[0.03] border border-white/[0.06] rounded-2xl animate-pulse" />
                 </div>
               </div>
             ) : sessions === 0 ? (
-              <div className="py-8 text-center text-stone-400 text-sm font-medium animate-fade-in">
-                No session logs available. Start logging to see your distribution!
+              <div className="py-10 text-center text-zinc-500 text-xs font-mono">
+                No session logs available yet. Submit your first log to view breakdown metrics!
               </div>
             ) : (
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-6">
                 {/* Stacked Progress Bar */}
-                <div className="w-full h-4 bg-stone-100/80 rounded-full overflow-hidden flex shadow-inner">
+                <div className="w-full h-4 bg-[#14141c] rounded-full overflow-hidden flex border border-white/[0.06]">
                   {typeCounts.memorization > 0 && (
-                    <div 
-                      style={{ width: `${memorizationPct}%` }} 
-                      className="bg-emerald-600 transition-all duration-500 hover:brightness-95 cursor-help"
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${memorizationPct}%` }}
+                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full relative group cursor-help"
                       title={`Hifz: ${typeCounts.memorization} sessions (${memorizationPct}%)`}
                     />
                   )}
                   {typeCounts.revision > 0 && (
-                    <div 
-                      style={{ width: `${revisionPct}%` }} 
-                      className="bg-amber-500 transition-all duration-500 hover:brightness-95 cursor-help"
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${revisionPct}%` }}
+                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      className="bg-gradient-to-r from-amber-500 to-yellow-400 h-full relative group cursor-help"
                       title={`Muraja'ah: ${typeCounts.revision} sessions (${revisionPct}%)`}
                     />
                   )}
                   {typeCounts.reading > 0 && (
-                    <div 
-                      style={{ width: `${readingPct}%` }} 
-                      className="bg-blue-500 transition-all duration-500 hover:brightness-95 cursor-help"
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${readingPct}%` }}
+                      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      className="bg-gradient-to-r from-blue-500 to-cyan-400 h-full relative group cursor-help"
                       title={`Tilawah: ${typeCounts.reading} sessions (${readingPct}%)`}
                     />
                   )}
@@ -356,49 +401,58 @@ export default function Dashboard({ user }) {
                 {/* Interactive Grid Legend */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Hifz */}
-                  <div className="bg-emerald-50/20 hover:bg-emerald-50/40 p-4 rounded-2xl border border-emerald-100/30 transition-all duration-300 flex items-center justify-between group cursor-default">
+                  <motion.div 
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-[#121218] p-4 rounded-2xl border border-white/[0.06] flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 bg-emerald-600 rounded-full ring-4 ring-emerald-50 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="w-3.5 h-3.5 bg-emerald-400 rounded-full shadow-[0_0_10px_#10b981]" />
                       <div>
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Hifz</p>
-                        <p className="text-xs font-semibold text-stone-400 mt-0.5">Memorization</p>
+                        <p className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">Hifz</p>
+                        <p className="text-xs font-medium text-zinc-500">Memorization</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-emerald-800">{typeCounts.memorization}</p>
-                      <p className="text-xs font-medium text-emerald-600/80">{memorizationPct}%</p>
+                      <p className="text-lg font-bold text-white font-display">{typeCounts.memorization}</p>
+                      <p className="text-[10px] font-mono text-emerald-400">{memorizationPct}%</p>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Muraja'ah */}
-                  <div className="bg-amber-50/10 hover:bg-amber-50/30 p-4 rounded-2xl border border-amber-100/20 transition-all duration-300 flex items-center justify-between group cursor-default">
+                  <motion.div 
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-[#121218] p-4 rounded-2xl border border-white/[0.06] flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 bg-amber-500 rounded-full ring-4 ring-amber-50 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="w-3.5 h-3.5 bg-amber-400 rounded-full shadow-[0_0_10px_#f59e0b]" />
                       <div>
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Muraja'ah</p>
-                        <p className="text-xs font-semibold text-stone-400 mt-0.5">Revision</p>
+                        <p className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">Muraja'ah</p>
+                        <p className="text-xs font-medium text-zinc-500">Revision</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-amber-800">{typeCounts.revision}</p>
-                      <p className="text-xs font-medium text-amber-600/80">{revisionPct}%</p>
+                      <p className="text-lg font-bold text-white font-display">{typeCounts.revision}</p>
+                      <p className="text-[10px] font-mono text-amber-400">{revisionPct}%</p>
                     </div>
-                  </div>
+                  </motion.div>
 
                   {/* Tilawah */}
-                  <div className="bg-blue-50/10 hover:bg-blue-50/30 p-4 rounded-2xl border border-blue-100/20 transition-all duration-300 flex items-center justify-between group cursor-default">
+                  <motion.div 
+                    whileHover={{ scale: 1.02 }}
+                    className="bg-[#121218] p-4 rounded-2xl border border-white/[0.06] flex items-center justify-between"
+                  >
                     <div className="flex items-center gap-3">
-                      <span className="w-3.5 h-3.5 bg-blue-500 rounded-full ring-4 ring-blue-50 group-hover:scale-110 transition-transform duration-200" />
+                      <span className="w-3.5 h-3.5 bg-blue-400 rounded-full shadow-[0_0_10px_#3b82f6]" />
                       <div>
-                        <p className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Tilawah</p>
-                        <p className="text-xs font-semibold text-stone-400 mt-0.5">Reading</p>
+                        <p className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-widest">Tilawah</p>
+                        <p className="text-xs font-medium text-zinc-500">Reading</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-blue-800">{typeCounts.reading}</p>
-                      <p className="text-xs font-medium text-blue-600/80">{readingPct}%</p>
+                      <p className="text-lg font-bold text-white font-display">{typeCounts.reading}</p>
+                      <p className="text-[10px] font-mono text-blue-400">{readingPct}%</p>
                     </div>
-                  </div>
+                  </motion.div>
                 </div>
               </div>
             )}
@@ -410,6 +464,6 @@ export default function Dashboard({ user }) {
           <LogForm userId={user?.uid} />
         </div>
       </div>
-    </div>
+    </motion.div>
   );
-}
+}

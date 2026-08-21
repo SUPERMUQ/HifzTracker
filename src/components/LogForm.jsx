@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, CheckCircle, AlertCircle, Calendar, Hash, Bookmark, MessageSquare, Compass } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
+import { BookOpen, CheckCircle, AlertCircle, Calendar, Hash, Bookmark, MessageSquare, Compass, Sparkles } from 'lucide-react';
 import { addReadingLog } from '../firebase/logService';
 
 const SURAHS = [
@@ -81,17 +83,21 @@ const sessionTypes = [
 // Inline validation error component
 const FieldError = ({ message }) =>
   message ? (
-    <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-red-500 animate-slide-in">
+    <motion.p 
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-red-400 font-mono"
+    >
       <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
       {message}
-    </p>
+    </motion.p>
   ) : null;
 
-// Input base classes
+// Dark SOTD Input base classes
 const inputBase =
-  "w-full pl-10 pr-4 py-3 bg-white border rounded-xl text-sm text-stone-800 placeholder-stone-300 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500";
-const inputNormal = `${inputBase} border-stone-200 hover:border-stone-300`;
-const inputError  = `${inputBase} border-red-300 bg-red-50/15 focus:ring-red-400/10 focus:border-red-400`;
+  "w-full pl-10 pr-4 py-3 bg-[#121218] border rounded-2xl text-sm text-zinc-100 placeholder-zinc-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500/80 font-sans";
+const inputNormal = `${inputBase} border-white/[0.08] hover:border-white/[0.15]`;
+const inputError  = `${inputBase} border-red-500/40 bg-red-950/10 focus:ring-red-500/20 focus:border-red-500`;
 
 export default function LogForm({ userId }) {
   const now = new Date();
@@ -119,7 +125,6 @@ export default function LogForm({ userId }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Clear the error for this field as user types
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -155,6 +160,19 @@ export default function LogForm({ userId }) {
     return newErrors;
   };
 
+  const triggerConfetti = () => {
+    try {
+      confetti({
+        particleCount: 60,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#10b981', '#34d399', '#f59e0b', '#fbbf24']
+      });
+    } catch {
+      // fallback
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const newErrors = validate();
@@ -182,6 +200,7 @@ export default function LogForm({ userId }) {
     try {
       await addReadingLog(userId, logPayload);
       setShowSuccess(true);
+      triggerConfetti();
       setFormData({ ...EMPTY_FORM, date: today });
       setErrors({});
       setTimeout(() => setShowSuccess(false), 4000);
@@ -194,70 +213,93 @@ export default function LogForm({ userId }) {
   };
 
   return (
-    <div className="w-full">
-      {/* Card */}
-      <div className="bg-white rounded-3xl shadow-sm border border-stone-100 overflow-hidden transition-all duration-300 hover:shadow-md hover:border-stone-200/50">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="w-full"
+    >
+      {/* SOTD Bento Card */}
+      <div className="bg-[#0c0c12]/90 rounded-3xl border border-white/[0.08] shadow-2xl backdrop-blur-xl overflow-hidden relative">
+        {/* Glow Accent */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Header */}
-        <div className="px-6 pt-7 pb-5 border-b border-stone-100 bg-gradient-to-br from-emerald-50/40 via-white to-white">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-lg shadow-emerald-700/10">
+        <div className="px-7 pt-7 pb-5 border-b border-white/[0.06] bg-gradient-to-r from-emerald-500/[0.04] to-transparent">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 bg-gradient-to-tr from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-950/40 shrink-0">
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-stone-850 leading-tight font-display">Log Your Session</h2>
-              <p className="text-xs text-stone-400 mt-0.5 font-medium">Record your progress to maintain your streak.</p>
+              <h2 className="text-lg font-bold text-white leading-tight font-display tracking-tight">Log Today's Session</h2>
+              <p className="text-xs text-zinc-400 mt-0.5 font-medium">Keep your momentum alive and protect your streak.</p>
             </div>
           </div>
         </div>
 
-        {/* Body */}
-        <div className="px-6 py-6 space-y-5">
+        {/* Form Content */}
+        <div className="px-7 py-6 space-y-6">
 
-          {/* Success banner */}
-          {showSuccess && (
-            <div className="p-4 bg-emerald-50/50 border border-emerald-100 text-emerald-800 rounded-2xl flex items-center gap-3 animate-fade-in">
-              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <span className="text-sm font-semibold">Progress logged successfully!</span>
-            </div>
-          )}
+          {/* Banners */}
+          <AnimatePresence>
+            {showSuccess && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 rounded-2xl flex items-center gap-3 text-xs font-medium"
+              >
+                <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>MashaAllah! Progress logged successfully. Streak preserved!</span>
+              </motion.div>
+            )}
 
-          {/* Submit error banner */}
-          {errors.submit && (
-            <div className="p-4 bg-red-50/50 border border-red-100 text-red-700 rounded-2xl flex items-center gap-3 animate-fade-in">
-              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <span className="text-sm font-semibold">{errors.submit}</span>
-            </div>
-          )}
+            {errors.submit && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="p-4 bg-red-500/10 border border-red-500/30 text-red-300 rounded-2xl flex items-center gap-3 text-xs font-medium"
+              >
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <span>{errors.submit}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Segmented control for Reading Type */}
+          {/* Segmented control for Reading Type with Morphing layoutId */}
           <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-2">
-              Reading Type
+            <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-2.5">
+              Session Category
             </label>
-            <div className="grid grid-cols-3 gap-2 bg-stone-50 p-1.5 rounded-2xl border border-stone-200/50">
+            <div className="grid grid-cols-3 gap-2 bg-[#121218] p-1.5 rounded-2xl border border-white/[0.06]">
               {sessionTypes.map((typeObj) => {
                 const isActive = formData.type === typeObj.id;
-                let activeStyles = "";
-                if (isActive) {
-                  if (typeObj.color === 'emerald') activeStyles = "bg-emerald-700 text-white shadow-md shadow-emerald-700/15";
-                  else if (typeObj.color === 'amber') activeStyles = "bg-amber-500 text-white shadow-md shadow-amber-500/15";
-                  else activeStyles = "bg-blue-500 text-white shadow-md shadow-blue-500/15";
-                }
-                
+
                 return (
                   <button
                     key={typeObj.id}
                     type="button"
                     onClick={() => setFormData(prev => ({ ...prev, type: typeObj.id }))}
-                    className={`relative py-2 px-1 rounded-xl text-center transition-all duration-200 cursor-pointer focus:outline-none ${
-                      isActive 
-                        ? `${activeStyles} font-bold scale-[1.02]` 
-                        : "text-stone-400 hover:text-stone-700 hover:bg-stone-100/50 font-medium"
-                    }`}
+                    className="relative py-2.5 px-2 rounded-xl text-center cursor-pointer focus:outline-none transition-colors duration-200"
                   >
-                    <span className="block text-[13px] tracking-tight">{typeObj.label}</span>
-                    <span className={`block text-[8px] mt-0.5 font-semibold tracking-wider ${isActive ? "text-emerald-100/80" : "text-stone-300"}`}>
+                    {isActive && (
+                      <motion.div
+                        layoutId="sessionTypePill"
+                        className={`absolute inset-0 rounded-xl shadow-lg ${
+                          typeObj.color === 'emerald'
+                            ? "bg-gradient-to-r from-emerald-600 to-teal-600 border border-emerald-400/40"
+                            : typeObj.color === 'amber'
+                            ? "bg-gradient-to-r from-amber-600 to-yellow-600 border border-amber-400/40"
+                            : "bg-gradient-to-r from-blue-600 to-cyan-600 border border-blue-400/40"
+                        }`}
+                        transition={{ type: "spring", stiffness: 400, damping: 28 }}
+                      />
+                    )}
+                    <span className={`relative z-10 block text-xs tracking-tight ${isActive ? "font-bold text-white" : "font-medium text-zinc-400 hover:text-zinc-200"}`}>
+                      {typeObj.label}
+                    </span>
+                    <span className={`relative z-10 block text-[9px] mt-0.5 font-mono uppercase tracking-wider ${isActive ? "text-white/80 font-semibold" : "text-zinc-600"}`}>
                       {typeObj.desc}
                     </span>
                   </button>
@@ -268,11 +310,11 @@ export default function LogForm({ userId }) {
 
           {/* Date Selector */}
           <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
               Session Date
             </label>
             <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                 <Calendar className="w-4 h-4" />
               </div>
               <input
@@ -288,16 +330,16 @@ export default function LogForm({ userId }) {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-dashed border-stone-100" />
+          <div className="border-t border-white/[0.06]" />
 
           {/* Surah Name & Page */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
                 Surah Name
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Compass className="w-4 h-4" />
                 </div>
                 <input
@@ -318,15 +360,15 @@ export default function LogForm({ userId }) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
                 Quran Page {selectedSurahInfo && (
-                  <span className="ml-1 text-emerald-600 normal-case font-semibold">
-                    (starts p.{selectedSurahInfo.page})
+                  <span className="ml-1 text-emerald-400 normal-case font-mono font-normal text-[10px]">
+                    (p.{selectedSurahInfo.page})
                   </span>
                 )}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Hash className="w-4 h-4" />
                 </div>
                 <input
@@ -350,15 +392,15 @@ export default function LogForm({ userId }) {
           {/* Ayat Range */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
                 Start Ayat {selectedSurahInfo && (
-                  <span className="ml-1 text-stone-400 normal-case font-medium">
+                  <span className="ml-1 text-zinc-500 normal-case font-mono text-[10px]">
                     (1–{selectedSurahInfo.ayahs})
                   </span>
                 )}
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Bookmark className="w-4 h-4" />
                 </div>
                 <input
@@ -379,11 +421,11 @@ export default function LogForm({ userId }) {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
                 End Ayat
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-zinc-500">
                   <Bookmark className="w-4 h-4" />
                 </div>
                 <input
@@ -406,11 +448,11 @@ export default function LogForm({ userId }) {
 
           {/* Notes */}
           <div>
-            <label className="block text-[10px] font-bold text-stone-400 uppercase tracking-wider mb-1.5">
-              Personal Notes <span className="text-stone-300 font-normal normal-case">— optional</span>
+            <label className="block text-[10px] font-mono font-semibold text-zinc-400 uppercase tracking-widest mb-1.5">
+              Personal Reflection <span className="text-zinc-600 font-sans normal-case text-xs">— optional</span>
             </label>
             <div className="relative">
-              <div className="absolute top-3.5 left-3.5 pointer-events-none text-stone-400">
+              <div className="absolute top-3.5 left-3.5 pointer-events-none text-zinc-500">
                 <MessageSquare className="w-4 h-4" />
               </div>
               <textarea
@@ -418,26 +460,28 @@ export default function LogForm({ userId }) {
                 value={formData.notes}
                 onChange={handleChange}
                 rows="3"
-                placeholder="Reflections on today's reading..."
+                placeholder="Reflections on tajweed, memorization difficulty, or teacher feedback..."
                 className={`${inputNormal} pl-10 resize-none`}
               />
             </div>
           </div>
         </div>
 
-        {/* Footer / Submit */}
-        <div className="px-6 pb-6">
-          <button
+        {/* Footer / Submit Button */}
+        <div className="px-7 pb-7">
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.96, transition: { type: "spring", stiffness: 500, damping: 15 } }}
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 disabled:bg-emerald-450 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-700/10 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:from-emerald-600 active:to-teal-600 disabled:opacity-50 text-emerald-950 font-extrabold py-3.5 px-4 rounded-2xl shadow-xl shadow-emerald-950/40 transition-all duration-200 flex items-center justify-center gap-2.5 cursor-pointer focus:outline-none focus:ring-4 focus:ring-emerald-500/20 text-sm tracking-wide"
           >
-            <BookOpen className="w-5 h-5" />
-            {isSubmitting ? "Saving..." : "Log Progress"}
-          </button>
+            <Sparkles className="w-4 h-4 fill-emerald-950" />
+            {isSubmitting ? "Recording Milestone..." : "Save Session Log"}
+          </motion.button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
